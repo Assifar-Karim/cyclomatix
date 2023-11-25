@@ -6,10 +6,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	fsinfo "github.com/Assifar-Karim/cyclomatix/internal/fctinfo"
 )
 
+type FileHandler interface {
+	HandleFile(path string, fctTable []fsinfo.FctInfo)
+}
+
 type FileList struct {
-	paths []string
+	paths       []string
+	fctTable    []fsinfo.FctInfo
+	fileHandler FileHandler
 }
 
 func (fl FileList) Handle() {
@@ -20,31 +28,33 @@ func (fl FileList) Handle() {
 			continue
 		}
 		if info.IsDir() {
-			handleDir(path)
+			fl.handleDir(path)
 		} else {
-			handleFile(path)
+			fl.handleFile(path)
 		}
 	}
 }
 
-func handleDir(path string) {
+func (fl FileList) handleDir(path string) {
 	filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
 		if d.IsDir() && (d.Name() == "vendor" || d.Name() == "test" || d.Name() == ".git") {
 			return filepath.SkipDir
 		}
 		if err == nil && !d.IsDir() && strings.HasSuffix(d.Name(), ".go") {
-			handleFile(p)
+			fl.handleFile(p)
 		}
 		return err
 	})
 }
 
-func handleFile(path string) {
-	// This is where the function handling logic will be injected
+func (fl FileList) handleFile(path string) {
+	fl.fileHandler.HandleFile(path, fl.fctTable)
 }
 
-func NewFileList(paths []string) FileList {
+func NewFileList(paths []string, fctTable []fsinfo.FctInfo, fileHandler FileHandler) FileList {
 	return FileList{
-		paths: paths,
+		paths:       paths,
+		fctTable:    fctTable,
+		fileHandler: fileHandler,
 	}
 }
