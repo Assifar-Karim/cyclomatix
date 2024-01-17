@@ -11,12 +11,13 @@ import (
 )
 
 type FileHandler interface {
-	HandleFile(path string, fctTable []fsinfo.FctInfo)
+	HandleFile(path string, fctTable *[]fsinfo.FctInfo)
+	ComputeComplexities(fctTable *[]fsinfo.FctInfo)
 }
 
 type FileList struct {
 	paths       []string
-	fctTable    []fsinfo.FctInfo
+	fctTable    *[]fsinfo.FctInfo
 	fileHandler FileHandler
 }
 
@@ -51,7 +52,7 @@ func (fl FileList) handleFile(path string) {
 	fl.fileHandler.HandleFile(path, fl.fctTable)
 }
 
-func NewFileList(paths []string, fctTable []fsinfo.FctInfo, fileHandler FileHandler) FileList {
+func NewFileList(paths []string, fctTable *[]fsinfo.FctInfo, fileHandler FileHandler) FileList {
 	return FileList{
 		paths:       paths,
 		fctTable:    fctTable,

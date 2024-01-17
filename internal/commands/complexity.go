@@ -18,7 +18,7 @@ var indirectionLvl int32
 var files []string
 var fileExplorer FileExplorer
 var functionTable []fsinfo.FctInfo
-var FileHandler fsexplorer.FileHandler
+var fileHandler fsexplorer.FileHandler
 
 func init() {
 	complexityCmd.Flags().Int32VarP(&indirectionLvl, "indirection-lvl", "i", 4, "Sets the maximum allowed level of indirection")
@@ -30,13 +30,15 @@ var complexityCmd *cobra.Command = &cobra.Command{
 	Short: "List the cyclomatic complexity of all functions in the input files",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		functionTable = []fsinfo.FctInfo{}
+		fileHandler = fsexplorer.NewGoFileHandler(indirectionLvl)
 		fileExplorer = fsexplorer.NewFileList(
 			files,
-			functionTable,
-			fsexplorer.NewGoFileHandler(indirectionLvl),
+			&functionTable,
+			fileHandler,
 		)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fileExplorer.Handle()
+		fileHandler.ComputeComplexities(&functionTable)
 	},
 }
