@@ -18,6 +18,10 @@ func (f FctInfo) Print() {
 	fmt.Printf("%s %s %s\n", f.pkgName, f.fctName, f.filename)
 }
 
+func (f FctInfo) GetCfg() utils.Graph {
+	return f.cfg
+}
+
 func (f *FctInfo) SetCycloCmplx(value int32) {
 	f.cyclomaticCmplx = value
 }
