@@ -167,6 +167,7 @@ func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.SwitchStmt:
 		stmt := "switch "
 		if n.Init != nil {
+			ast.Walk(v, n.Init)
 			init := v.getLine(n.Init.Pos(), n.Init.End())
 			stmt += init[:len(init)-1]
 			v.visitedNodes = append(v.visitedNodes, n.Init)
