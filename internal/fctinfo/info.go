@@ -12,6 +12,7 @@ type FctInfo struct {
 	filename        string
 	cyclomaticCmplx int32
 	cfg             utils.Graph
+	callList        map[string]int
 }
 
 func (f FctInfo) Print() {
@@ -26,11 +27,12 @@ func (f *FctInfo) SetCycloCmplx(value int32) {
 	f.cyclomaticCmplx = value
 }
 
-func NewFctInfo(pkgName string, fctName string, filename string, cfg utils.Graph) FctInfo {
+func NewFctInfo(pkgName string, fctName string, filename string, cfg utils.Graph, callList map[string]int) FctInfo {
 	return FctInfo{
 		pkgName:  pkgName,
 		fctName:  fctName,
 		filename: filename,
 		cfg:      cfg,
+		callList: callList,
 	}
 }

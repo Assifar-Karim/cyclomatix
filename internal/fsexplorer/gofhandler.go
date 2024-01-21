@@ -29,6 +29,7 @@ type GoFctVisitor struct {
 	loopStack      []int32
 	afterLoopStack []int32
 	breakQueue     []int32
+	callList       map[string]int
 }
 
 func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
@@ -43,9 +44,10 @@ func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
 			visitor := GoFctVisitor{
-				cfg:   utils.NewCFGraph(),
-				fset:  fset,
-				lines: lines,
+				cfg:      utils.NewCFGraph(),
+				fset:     fset,
+				lines:    lines,
+				callList: map[string]int{},
 			}
 			visitor.cfg.Append("")
 			ast.Walk(&visitor, d)
@@ -70,13 +72,13 @@ func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
 				d.Name.Name,
 				path,
 				*visitor.cfg,
+				visitor.callList,
 			))
 		}
 	}
 }
 
 func (fh GoFileHandler) ComputeComplexities(fctTable *[]fsinfo.FctInfo) {
-
 }
 
 func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
@@ -102,7 +104,11 @@ func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
 		v.deferredCalls = append(v.deferredCalls, n.Call)
 	case *ast.CallExpr:
 		stmt := v.getLine(n.Pos(), n.End())
-
+		switch s := n.Fun.(type) {
+		case *ast.SelectorExpr:
+			key := fmt.Sprintf("%v.%v", s.X, s.Sel)
+			v.callList[key]++
+		}
 		for _, arg := range n.Args {
 			switch a := arg.(type) {
 			case *ast.CallExpr:
