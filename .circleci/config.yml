@@ -1,0 +1,19 @@
+version: 2.1
+jobs:
+  Test:
+    docker:
+    - image: cimg/go:1.21.4
+    steps:
+      - checkout
+      - run: 
+          name: Run tests
+          command: |
+            mkdir -p /tmp/test-results
+            gotestsum --format testname --junitfile /tmp/test-results/unit-tests.xml github.com/Assifar-Karim/cyclomatix/test
+      - store_test_results:
+          path: /tmp/test-results
+
+workflows:
+  QA:
+    jobs:
+      - Test
