@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	fsinfo "github.com/Assifar-Karim/cyclomatix/internal/fctinfo"
 	"github.com/Assifar-Karim/cyclomatix/internal/fsexplorer"
 	"github.com/spf13/cobra"
@@ -38,6 +40,12 @@ var complexityCmd *cobra.Command = &cobra.Command{
 		)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("   ________  __________    ____  __  ______  ___________  __")
+		fmt.Println("  / ____/\\ \\/ / ____/ /   / __ \\/  |/  /   |/_  __/  _/ |/ /")
+		fmt.Println(" / /      \\  / /   / /   / / / / /|_/ / /| | / /  / / |   / ")
+		fmt.Println("/ /___    / / /___/ /___/ /_/ / /  / / ___ |/ / _/ / /   |  ")
+		fmt.Println("\\____/   /_/\\____/_____/\\____/_/  /_/_/  |_/_/ /___//_/|_|  ")
+		fmt.Println()
 		fileExplorer.Handle()
 		fileHandler.ComputeComplexities(&functionTable)
 	},
