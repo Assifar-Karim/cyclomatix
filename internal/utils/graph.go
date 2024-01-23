@@ -67,6 +67,14 @@ func (g *Graph) LinkNodes(node1, node2 int32) {
 	g.AdjList[node1] = append(g.AdjList[node1], node2)
 }
 
+func (g Graph) CountEdges() int {
+	result := 0
+	for _, list := range g.AdjList {
+		result += len(list)
+	}
+	return result
+}
+
 // NOTE (KARIM) : This method is used for debugging purposes
 func (g *Graph) Print() {
 	fmt.Println(g.AdjList)

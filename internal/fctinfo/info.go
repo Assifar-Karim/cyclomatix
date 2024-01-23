@@ -12,15 +12,33 @@ type FctInfo struct {
 	filename        string
 	cyclomaticCmplx int32
 	cfg             utils.Graph
-	callList        map[string]int
+	CallList        map[string]int
+	IsVisited       bool
 }
 
 func (f FctInfo) Print() {
-	fmt.Printf("%s %s %s\n", f.pkgName, f.fctName, f.filename)
+	fmt.Printf("%-10s %-10s %-20s %v\n", f.pkgName, f.fctName, f.filename, f.cyclomaticCmplx)
 }
 
 func (f FctInfo) GetCfg() utils.Graph {
 	return f.cfg
+}
+
+func GetFctByNameAndPkg(fctTable *[]FctInfo, name string, pkg string) (*FctInfo, error) {
+	for _, fct := range *fctTable {
+		if name == fct.fctName && pkg == fct.pkgName {
+			return &fct, nil
+		}
+	}
+	return nil, fmt.Errorf("function not found")
+}
+
+func (f *FctInfo) SetAsVisited() {
+	f.IsVisited = true
+}
+
+func (f FctInfo) GetCycloCmplx() int32 {
+	return f.cyclomaticCmplx
 }
 
 func (f *FctInfo) SetCycloCmplx(value int32) {
@@ -29,10 +47,11 @@ func (f *FctInfo) SetCycloCmplx(value int32) {
 
 func NewFctInfo(pkgName string, fctName string, filename string, cfg utils.Graph, callList map[string]int) FctInfo {
 	return FctInfo{
-		pkgName:  pkgName,
-		fctName:  fctName,
-		filename: filename,
-		cfg:      cfg,
-		callList: callList,
+		pkgName:   pkgName,
+		fctName:   fctName,
+		filename:  filename,
+		cfg:       cfg,
+		CallList:  callList,
+		IsVisited: false,
 	}
 }

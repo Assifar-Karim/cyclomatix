@@ -13,14 +13,20 @@ type TestInput struct {
 	fctTable *[]fsinfo.FctInfo
 }
 
-type Test struct {
+type HandleFileTest struct {
 	name  string
 	input TestInput
 	want  []map[int32][]int32
 }
 
+type ComputeComplexitiesTest struct {
+	name  string
+	input TestInput
+	want  []int32
+}
+
 func TestHandleFile(t *testing.T) {
-	tests := []Test{
+	tests := []HandleFileTest{
 		{
 			"Basic Functions",
 			TestInput{
@@ -80,21 +86,21 @@ func TestHandleFile(t *testing.T) {
 				fctTable: &[]fsinfo.FctInfo{},
 			},
 			[]map[int32][]int32{
-				{0: []int32{1}, 1: []int32{2, 3}, 2: []int32{3},
-					3: []int32{1, 4}, 4: []int32{}},
+				{0: []int32{1}, 1: []int32{2, 3}, 2: []int32{1},
+					3: []int32{4}, 4: []int32{}},
 				{0: []int32{1}, 1: []int32{2}, 2: []int32{3, 5},
 					3: []int32{4}, 4: []int32{2}, 5: []int32{6}, 6: []int32{}},
 				{0: []int32{1}, 1: []int32{2, 6}, 2: []int32{3, 4},
-					3: []int32{6}, 4: []int32{5}, 5: []int32{6},
-					6: []int32{1, 7}, 7: []int32{}},
+					3: []int32{6}, 4: []int32{5}, 5: []int32{1},
+					6: []int32{7}, 7: []int32{}},
 				{0: []int32{1}, 1: []int32{2, 6}, 2: []int32{3, 4},
-					3: []int32{1}, 4: []int32{5}, 5: []int32{6},
-					6: []int32{1, 7}, 7: []int32{}},
+					3: []int32{1}, 4: []int32{5}, 5: []int32{1},
+					6: []int32{7}, 7: []int32{}},
 				{0: []int32{1}, 1: []int32{2, 6}, 2: []int32{3, 4},
-					3: []int32{8}, 4: []int32{5}, 5: []int32{6},
-					6: []int32{1, 7}, 7: []int32{8}, 8: []int32{}},
+					3: []int32{8}, 4: []int32{5}, 5: []int32{1},
+					6: []int32{7}, 7: []int32{8}, 8: []int32{}},
 				{0: []int32{1}, 1: []int32{2}, 2: []int32{3, 4},
-					3: []int32{4}, 4: []int32{2, 5}, 5: []int32{}},
+					3: []int32{2}, 4: []int32{5}, 5: []int32{}},
 			},
 		},
 	}
@@ -107,6 +113,57 @@ func TestHandleFile(t *testing.T) {
 		for i, fs := range ft {
 			ans := fs.GetCfg().AdjList
 			if !reflect.DeepEqual(ans, tt.want[i]) {
+				t.Errorf("got %v, want %v", ans, tt.want[i])
+			}
+		}
+	}
+}
+
+func TestComputeComplexities(t *testing.T) {
+	tests := []ComputeComplexitiesTest{
+		{
+			"Basic Functions",
+			TestInput{
+				path:     "../examples/basic.go",
+				fctTable: &[]fsinfo.FctInfo{},
+			},
+			[]int32{1, 1},
+		},
+		{
+			"Conditional Functions 1",
+			TestInput{
+				path:     "../examples/if.go",
+				fctTable: &[]fsinfo.FctInfo{},
+			},
+			[]int32{2, 2, 3, 2, 3},
+		},
+		{
+			"Conditional Functions 2",
+			TestInput{
+				path:     "../examples/switch.go",
+				fctTable: &[]fsinfo.FctInfo{},
+			},
+			[]int32{8, 11},
+		},
+		{
+			"Iterative Functions",
+			TestInput{
+				path:     "../examples/for.go",
+				fctTable: &[]fsinfo.FctInfo{},
+			},
+			[]int32{2, 2, 3, 3, 3, 2},
+		},
+	}
+	g := fsexplorer.NewGoFileHandler(4)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g.HandleFile(tt.input.path, tt.input.fctTable)
+			g.ComputeComplexities(tt.input.fctTable)
+		})
+		ft := *tt.input.fctTable
+		for i, fs := range ft {
+			ans := fs.GetCycloCmplx()
+			if ans != tt.want[i] {
 				t.Errorf("got %v, want %v", ans, tt.want[i])
 			}
 		}

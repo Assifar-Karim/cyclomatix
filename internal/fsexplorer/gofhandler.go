@@ -30,6 +30,7 @@ type GoFctVisitor struct {
 	afterLoopStack []int32
 	breakQueue     []int32
 	callList       map[string]int
+	pkg            string
 }
 
 func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
@@ -48,6 +49,7 @@ func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
 				fset:     fset,
 				lines:    lines,
 				callList: map[string]int{},
+				pkg:      file.Name.Name,
 			}
 			visitor.cfg.Append("")
 			ast.Walk(&visitor, d)
@@ -79,6 +81,45 @@ func (fh GoFileHandler) HandleFile(path string, fctTable *[]fsinfo.FctInfo) {
 }
 
 func (fh GoFileHandler) ComputeComplexities(fctTable *[]fsinfo.FctInfo) {
+	for i := 0; i < len(*fctTable); i++ {
+		if (*fctTable)[i].IsVisited {
+			continue
+		}
+		computeComplexity(&(*fctTable)[i], fctTable, fh.indirectionLvl)
+	}
+	fmt.Printf("%-10s %-10s %-20s %s\n", "Package", "Function", "Filename", "Complexity")
+	for _, fct := range *fctTable {
+		fct.Print()
+	}
+}
+
+func computeComplexity(f *fsinfo.FctInfo, fctTable *[]fsinfo.FctInfo, indirectLvl int32) {
+	if indirectLvl == 0 {
+		f.SetCycloCmplx(1)
+		return
+	}
+	cfg := f.GetCfg()
+	callCounter := len(f.CallList)
+	for calledF, totalCalls := range f.CallList {
+		callCounter--
+		callInfo := strings.Split(calledF, ".")
+		call, err := fsinfo.GetFctByNameAndPkg(fctTable, callInfo[1], callInfo[0])
+		if err != nil {
+			continue
+		}
+		if !call.IsVisited {
+			computeComplexity(call, fctTable, indirectLvl-1)
+		}
+		cmplx := f.GetCycloCmplx() + call.GetCycloCmplx()*int32(totalCalls) - int32(totalCalls)
+		f.SetCycloCmplx(cmplx)
+	}
+	if callCounter == 0 {
+		totalNodes := len(cfg.AdjList)
+		cmplx := f.GetCycloCmplx() + int32(cfg.CountEdges()-totalNodes+2)
+		f.SetCycloCmplx(cmplx)
+		f.SetAsVisited()
+	}
+
 }
 
 func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
@@ -107,6 +148,9 @@ func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
 		switch s := n.Fun.(type) {
 		case *ast.SelectorExpr:
 			key := fmt.Sprintf("%v.%v", s.X, s.Sel)
+			v.callList[key]++
+		case *ast.Ident:
+			key := fmt.Sprintf("%v.%v", v.pkg, s.Name)
 			v.callList[key]++
 		}
 		for _, arg := range n.Args {
@@ -260,16 +304,16 @@ func (v *GoFctVisitor) Visit(node ast.Node) ast.Visitor {
 			}
 		}
 
+		if v.cfg.NodesNames[v.cfg.LatestNode] == "" {
+			v.cfg.DeleteNode(v.cfg.LatestNode)
+		}
+
 		if !hasBreak {
 			v.cfg.LinkNodes(v.cfg.LatestNode, v.loopStack[len(v.loopStack)-1])
 		}
 
 		// After for block
-		if v.cfg.NodesNames[v.cfg.LatestNode] == "" {
-			v.cfg.AddStatement("Loop End")
-		} else {
-			v.cfg.AddNode("Loop End")
-		}
+		v.cfg.AddNode("Loop End")
 		v.cfg.LinkNodes(v.loopStack[len(v.loopStack)-1], v.cfg.LatestNode)
 		v.afterLoopStack = append(v.afterLoopStack, v.cfg.LatestNode)
 		v.cfg.Append("")
