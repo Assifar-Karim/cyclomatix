@@ -24,6 +24,14 @@ func (f FctInfo) GetCfg() utils.Graph {
 	return f.cfg
 }
 
+func (f FctInfo) GetName() string {
+	return f.fctName
+}
+
+func (f FctInfo) GetPkg() string {
+	return f.pkgName
+}
+
 func GetFctByNameAndPkg(fctTable *[]FctInfo, name string, pkg string) (*FctInfo, error) {
 	for _, fct := range *fctTable {
 		if name == fct.fctName && pkg == fct.pkgName {

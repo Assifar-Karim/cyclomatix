@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	fsinfo "github.com/Assifar-Karim/cyclomatix/internal/fctinfo"
 	"github.com/Assifar-Karim/cyclomatix/internal/fsexplorer"
 	"github.com/spf13/cobra"
@@ -17,10 +15,6 @@ func init() {
 }
 
 var indirectionLvl int32
-var files []string
-var fileExplorer FileExplorer
-var functionTable []fsinfo.FctInfo
-var fileHandler fsexplorer.FileHandler
 
 func init() {
 	complexityCmd.Flags().Int32VarP(&indirectionLvl, "indirection-lvl", "i", 4, "Sets the maximum allowed level of indirection")
@@ -40,12 +34,7 @@ var complexityCmd *cobra.Command = &cobra.Command{
 		)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("   ________  __________    ____  __  ______  ___________  __")
-		fmt.Println("  / ____/\\ \\/ / ____/ /   / __ \\/  |/  /   |/_  __/  _/ |/ /")
-		fmt.Println(" / /      \\  / /   / /   / / / / /|_/ / /| | / /  / / |   / ")
-		fmt.Println("/ /___    / / /___/ /___/ /_/ / /  / / ___ |/ / _/ / /   |  ")
-		fmt.Println("\\____/   /_/\\____/_____/\\____/_/  /_/_/  |_/_/ /___//_/|_|  ")
-		fmt.Println()
+		printBanner()
 		fileExplorer.Handle()
 		fileHandler.ComputeComplexities(&functionTable)
 	},

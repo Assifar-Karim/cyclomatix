@@ -2,6 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/dominikbraun/graph"
 )
 
 type Graph struct {
@@ -73,6 +76,46 @@ func (g Graph) CountEdges() int {
 		result += len(list)
 	}
 	return result
+}
+
+func (g Graph) GenerateDot() graph.Graph[string, string] {
+	cteBlocksCounter := []int{0, 0, 0, 0, 0}
+	dg := graph.New[string, string](graph.StringHash, graph.Directed())
+	for node := range g.AdjList {
+		n := sanitizeNodeName(strings.Replace(g.NodesNames[node], "\"", "\\\"", -1), cteBlocksCounter)
+		g.NodesNames[node] = n
+		dg.AddVertex(n)
+	}
+
+	for node, adjList := range g.AdjList {
+		n := g.NodesNames[node]
+		for _, adjNode := range adjList {
+			aN := g.NodesNames[adjNode]
+			dg.AddEdge(n, aN)
+		}
+	}
+	return dg
+}
+
+func sanitizeNodeName(nodeName string, cteBlocksCounter []int) string {
+	if strings.Contains(nodeName, "If End") {
+		cteBlocksCounter[0]++
+		return fmt.Sprintf("%v %v", nodeName, cteBlocksCounter[0])
+	} else if strings.Contains(nodeName, "For End") {
+		cteBlocksCounter[1]++
+		return fmt.Sprintf("%v %v", nodeName, cteBlocksCounter[1])
+	} else if strings.Contains(nodeName, "Switch End") {
+		cteBlocksCounter[2]++
+		return fmt.Sprintf("%v %v", nodeName, cteBlocksCounter[2])
+	} else if strings.Contains(nodeName, "continue") {
+		cteBlocksCounter[3]++
+		return fmt.Sprintf("%v %v", nodeName, cteBlocksCounter[3])
+	} else if strings.Contains(nodeName, "break") {
+		cteBlocksCounter[4]++
+		return fmt.Sprintf("%v %v", nodeName, cteBlocksCounter[4])
+	} else {
+		return nodeName
+	}
 }
 
 // NOTE (KARIM) : This method is used for debugging purposes
