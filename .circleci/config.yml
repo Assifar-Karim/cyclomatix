@@ -12,8 +12,77 @@ jobs:
             gotestsum --format testname --junitfile /tmp/test-results/unit-tests.xml github.com/Assifar-Karim/cyclomatix/test
       - store_test_results:
           path: /tmp/test-results
+  Build:
+    docker:
+    - image: cimg/go:1.21.4
+    steps:
+      - checkout
+      - run:  
+          name: Build and Package
+          command: make package
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - cyclomatix-darwin-amd64.tar.gz
+            - cyclomatix-darwin-arm64.tar.gz
+            - cyclomatix-linux-amd64.tar.gz
+            - cyclomatix-linux-arm64.tar.gz
+            - cyclomatix-windows.zip
+  Release:
+    docker:
+    - image: cimg/base:2024.01
+    steps:
+    - checkout
+    - attach_workspace:
+        at: bin
+    - run:
+        name: Install jq
+        command: sudo apt update && sudo apt install -y jq
+    - run:
+        name: Create release
+        command: |
+          export RELEASE_ID=$(curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/Assifar-Karim/cyclomatix/releases \
+          -d "{\"tag_name\":\"$CIRCLE_TAG\",\"name\":\"$CIRCLE_TAG\",\"draft\":true,\"prerelease\":false,\"generate_release_notes\":false}" | jq .id)
+          cd bin
+          curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/Assifar-Karim/cyclomatix/releases/$RELEASE_ID/assets?name=cyclomatix-darwin-amd64.tar.gz" \
+          --data-binary "@cyclomatix-darwin-amd64.tar.gz"
+          curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/Assifar-Karim/cyclomatix/releases/$RELEASE_ID/assets?name=cyclomatix-darwin-arm64.tar.gz" \
+          --data-binary "@cyclomatix-darwin-arm64.tar.gz"
+          curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/Assifar-Karim/cyclomatix/releases/$RELEASE_ID/assets?name=cyclomatix-linux-amd64.tar.gz" \
+          --data-binary "@cyclomatix-linux-amd64.tar.gz"
+          curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/Assifar-Karim/cyclomatix/releases/$RELEASE_ID/assets?name=cyclomatix-linux-arm64.tar.gz" \
+          --data-binary "@cyclomatix-linux-arm64.tar.gz"
+          curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/Assifar-Karim/cyclomatix/releases/$RELEASE_ID/assets?name=cyclomatix-windows-amd64.zip" \
+          --data-binary "@cyclomatix-windows-amd64.zip"
 
 workflows:
   QA:
     jobs:
       - Test
+  Build and Release:
+    jobs:
+      - Build:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+      - Release:
+          requires:
+            - Build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
